@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Veri Listeleme</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<h1>Categories Table</h1>
+<button id="getVeriler">Verileri Getir</button>
+<table>
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+    </tr>
+    </thead>
+    <tbody id="veri-tablosu">
+    <!-- Veriler burada listelenecek -->
+    </tbody>
+</table>
+<h1>GetById Listesi</h1>
+<button id="getVeriByIdButton">ID'ye Gore Veriyi Getir</button>
+<input type="text" id="inputId" placeholder="ID Girin">
+<table>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+    <tbody id="veri-listesi">
+    <!-- Veriler burada listelenecek -->
+    <div id="veriSonucu"></div>
+    </tbody>
+</table>
+<h1>Create</h1>
+<button id="saveButton">Kaydet</button>
+<input type="text" id="name" placeholder="Name Girin">
+<table>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+    <tbody id="create">
+    <!-- Veriler burada listelenecek -->
+    </tbody>
+</table>
+
+<h1>Update</h1>
+<form id="updateForm">
+    <label for="updateId">Guncellenecek Kategori ID:</label>
+    <input type="text" id="updateId" placeholder="Guncellenecek Kategori ID'sini Girin">
+    <label for="updateName">Yeni Ad:</label>
+    <input type="text" id="updateName" placeholder="Yeni Adi Girin">
+    <button type="submit">Guncelle</button>
+</form>
+
+<h1>Delete</h1>
+<form id="deleteForm">
+    <label for="deleteId">Silinecek Kategori ID:</label>
+    <input type="text" id="deleteId" placeholder="Silinecek Kategori ID'sini Girin">
+    <button type="submit">Sil</button>
+</form>
+
+<h1>Delete All</h1>
+<button id="deleteAllButton">Tum Verileri Sil</button>
+
+<script>
+    $(document).ready(function () {
+        // Verileri getir butonuna tıklanınca çalışacak işlev
+        $("#getVeriler").click(function () {
+            $.ajax({
+                url: "http://localhost:3306/categories/api/v1/getAll",
+                method: "GET",
+                dataType: "json",
+                success: function (veriler) {
+                    var veriTablosu = $("#veri-tablosu");
+                    veriTablosu.empty();
+
+                    $.each(veriler, function (index, veri) {
+                        var satir = $("<tr>");
+                        satir.append($("<td>").text(veri.id));
+                        satir.append($("<td>").text(veri.name));
+
+                        veriTablosu.append(satir);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        $("#getVeriByIdButton").click(function () {
+            var id = $("#inputId").val();
+            if (id) {
+                $.ajax({
+                    url: "http://localhost:3306/categories/api/v1/getById/" + id,
+                    method: "GET",
+                    dataType: "json",
+                    success: function (veri) {
+                        if (veri) {
+                            var sonucHtml = "<p>ID: " + veri.id + "</p><p>Name: " + veri.name + "</p>";
+                            $("#veriSonucu").html(sonucHtml);
+                        } else {
+                            $("#veriSonucu").html("Belirtilen ID ile eşleşen veri bulunamadı.");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Hata:', error);
+                    }
+                });
+            } else {
+                alert("Lutfen bir ID girin.");
+            }
+        });
+
+        $("#saveButton").click(function () {
+            var yeniKategori = {
+                name: $("#name").val()
+            };
+
+            $.ajax({
+                url: "http://localhost:3306/categories/api/v1/save",
+                method: "POST",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify(yeniKategori),
+                success: function (sonuc) {
+                    console.log('Kaydedilen Kategori ID:', sonuc);
+                    alert('Kategori kaydedildi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        // Güncelleme formu için submit işlevi
+        $("#updateForm").submit(function (e) {
+            e.preventDefault(); // Formun otomatik olarak gönderilmesini engeller
+
+            var kategoriId = $("#updateId").val(); // Güncellenecek kategori ID'sini alın
+            var yeniAd = $("#updateName").val(); // Yeni adı alın
+
+            var guncellenecekKategori = {
+                id: kategoriId,
+                name: yeniAd
+            };
+
+            $.ajax({
+                url: "http://localhost:3306/categories/api/v1/update",
+                method: "PUT",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify(guncellenecekKategori),
+                success: function (sonuc) {
+                    console.log('Güncellenen Kategori ID:', sonuc);
+                    alert('Kategori güncellendi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        // Silme formu için submit işlevi
+        $("#deleteForm").submit(function (e) {
+            e.preventDefault(); // Formun otomatik olarak gönderilmesini engeller
+
+            var kategoriId = $("#deleteId").val(); // Silinecek kategori ID'sini alın
+
+            $.ajax({
+                url: "http://localhost:3306/categories/api/v1/delete/" + kategoriId,
+                method: "DELETE",
+                dataType: "json",
+                success: function (sonuc) {
+                    console.log('Silinen Kategori ID:', sonuc);
+                    alert('Kategori silindi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+         $("#deleteAllButton").click(function () {
+            $.ajax({
+                url: "http://localhost:3306/categories/api/v1/deleteAll",
+                method: "DELETE",
+                success: function (sonuc) {
+                    console.log('Tum Veriler Silindi:', sonuc);
+                    alert('Tum veriler silindi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                    alert('Verileri silme sirasında bir hata olustu.');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

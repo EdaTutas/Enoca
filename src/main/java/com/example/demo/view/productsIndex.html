@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<h1>Products Table</h1>
+<button id="getVeriler">Verileri Getir</button>
+<table>
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Category</th>
+    </tr>
+    </thead>
+    <tbody id="veri-tablosu">
+    <!-- Veriler burada listelenecek -->
+    </tbody>
+</table>
+<h1>GetById Listesi</h1>
+<button id="getVeriByIdButton">ID'ye Gore Veriyi Getir</button>
+<input type="text" id="inputId" placeholder="ID Girin">
+<table>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+    <tbody id="veri-listesi">
+    <!-- Veriler burada listelenecek -->
+    <div id="veriSonucu"></div>
+    </tbody>
+</table>
+<h1>Create</h1>
+<button id="saveButton">Kaydet</button>
+<input type="text" id="name" placeholder="Name Girin">
+<input type="text" id="description" placeholder="Description Girin">
+<input type="text" id="price" placeholder="Price Girin">
+<input type="text" id="category" placeholder="Category Girin">
+<table>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+    <tbody id="create">
+    <!-- Veriler burada listelenecek -->
+    </tbody>
+</table>
+
+<h1>Update</h1>
+<form id="updateForm">
+    <label for="updateId">Guncellenecek Urun ID:</label>
+    <input type="text" id="updateId" placeholder="Guncellenecek Urun ID'sini Girin">
+    <label for="updateName">Yeni Ad:</label>
+    <input type="text" id="updateName" placeholder="Yeni Adi Girin">
+    <label for="updateDescription">Guncellenecek Urun Aciklama:</label>
+    <input type="text" id="updateDescription" placeholder="Guncellenecek Product Aciklamasini Girin">
+    <label for="updatePrice">Guncellenecek Ucret:</label>
+    <input type="text" id="updatePrice" placeholder="Guncellenecek Product Ucretini Girin">
+    <label for="updateCategory">Guncellenecek Kategori:</label>
+    <input type="text" id="updateCategory" placeholder="Guncellenecek Category Girin">
+    <button type="submit">Guncelle</button>
+</form>
+
+<h1>Delete</h1>
+<form id="deleteForm">
+    <label for="deleteId">Silinecek Urun ID:</label>
+    <input type="text" id="deleteId" placeholder="Silinecek Urun ID'sini Girin">
+    <button type="submit">Sil</button>
+</form>
+
+<h1>Delete All</h1>
+<button id="deleteAllButton">Tum Verileri Sil</button>
+
+<script>
+    $(document).ready(function () {
+        // Verileri getir butonuna tıklanınca çalışacak işlev
+        $("#getVeriler").click(function () {
+            $.ajax({
+                url: "http://localhost:3306/products/api/v1/getAll",
+                method: "GET",
+                dataType: "json",
+                success: function (veriler) {
+                    var veriTablosu = $("#veri-tablosu");
+                    veriTablosu.empty();
+
+                    $.each(veriler, function (index, veri) {
+                        var satir = $("<tr>");
+                        satir.append($("<td>").text(veri.id));
+                        satir.append($("<td>").text(veri.name));
+                        satir.append($("<td>").text(veri.description));
+                        satir.append($("<td>").text(veri.price));
+                        satir.append($("<td>").text(veri.category));
+
+                        veriTablosu.append(satir);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        $("#getVeriByIdButton").click(function () {
+            var id = $("#inputId").val();
+            if (id) {
+                $.ajax({
+                    url: "http://localhost:3306/products/api/v1/getById/" + id,
+                    method: "GET",
+                    dataType: "json",
+                    success: function (veri) {
+                        if (veri) {
+                            var sonucHtml = "<p>Id: " + veri.id + "</p><p>Name: " + veri.name + "</p><p>Description: " + veri.description + "</p><p>Price: " + veri.price + "</p><p>Category: " + veri.category + "</p>";
+                            $("#veriSonucu").html(sonucHtml);
+                        } else {
+                            $("#veriSonucu").html("Belirtilen ID ile eşleşen veri bulunamadı.");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Hata:', error);
+                    }
+                });
+            } else {
+                alert("Lütfen bir ID girin.");
+            }
+        });
+
+        $("#saveButton").click(function () {
+            var yeniUrun = {
+                name: $("#name").val(),
+                description: $("#description").val(),
+                price: $("#price").val(),
+                category: $("#category").val()
+            };
+
+            $.ajax({
+                url: "http://localhost:3306/products/api/v1/save",
+                method: "POST",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify(yeniUrun),
+                success: function (sonuc) {
+                    console.log('Kaydedilen Urun ID:', sonuc);
+                    alert('Urun kaydedildi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        // Güncelleme formu için submit işlevi
+        $("#updateForm").submit(function (e) {
+            e.preventDefault(); // Formun otomatik olarak gönderilmesini engeller
+
+            var urunId = $("#updateId").val(); // Güncellenecek urun ID'sini alın
+            var yeniAd = $("#updateName").val(); // Yeni adı alın
+            var yeniAciklama = $("#updateDescription").val(); // Yeni açıklamayı alın
+            var yeniUcret = $("#updatePrice").val(); // Yeni ücreti alın
+            var yeniKategori = $("#updateCategory").val(); // Yeni kategoriyi alın
+
+            var guncellenecekUrun = {
+                id: urunId,
+                name: yeniAd,
+                description: yeniAciklama,
+                price: yeniUcret,
+                category: yeniKategori
+            };
+
+            $.ajax({
+                url: "http://localhost:3306/products/api/v1/update",
+                method: "PUT",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify(guncellenecekUrun),
+                success: function (sonuc) {
+                    console.log('Guncellenen Urun ID:', sonuc);
+                    alert('Urun guncellendi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        // Silme formu için submit işlevi
+        $("#deleteForm").submit(function (e) {
+            e.preventDefault(); // Formun otomatik olarak gönderilmesini engeller
+
+            var urunId = $("#deleteId").val(); // Silinecek ürün ID'sini alın
+
+            $.ajax({
+                url: "http://localhost:3306/products/api/v1/delete/" + urunId,
+                method: "DELETE",
+                dataType: "json",
+                success: function (sonuc) {
+                    console.log('Silinen Urun ID:', sonuc);
+                    alert('Urun silindi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                }
+            });
+        });
+
+        $("#deleteAllButton").click(function () {
+            $.ajax({
+                url: "http://localhost:3306/products/api/v1/deleteAll",
+                method: "DELETE",
+                success: function (sonuc) {
+                    console.log('Tum Veriler Silindi:', sonuc);
+                    alert('Tum veriler silindi.');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Hata:', error);
+                    alert('Verileri silme sırasında bir hata oluştu.');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
